@@ -1,0 +1,13 @@
+{
+    "files.associations": {
+        "protocol_examples_common.h": "c",
+        "headfile.h": "c",
+        "wifi_ap.h": "c",
+        "web_server.h": "c",
+        "esp_http_server.h": "c",
+        "cjson.h": "c",
+        "esp_vfs.h": "c",
+        "uart.h": "c",
+        "flash.h": "c"
+    }
+}

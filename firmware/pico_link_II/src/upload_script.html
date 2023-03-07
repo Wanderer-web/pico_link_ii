@@ -1,0 +1,156 @@
+<!--
+ * @Author: Wanderer
+ * @Date: 2022-04-26 21:06:51
+ * @LastEditors: Wanderer
+ * @LastEditTime: 2023-02-15 19:15:52
+ * @FilePath: \pico_link_II\src\upload_script.html
+ * @Description: 
+-->
+
+<!DOCTYPE html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Pico Link II 参数配置</title>
+</head>
+
+<body>
+    <table class="fixed" border="0">
+        <col width="1000px" />
+        <col width="500px" />
+        <h3>Pico Link II 参数配置</h3>
+        <div>
+            <label for="name">WiFi账号</label>
+            <input type="text" id="SSID" name="SSID" placeholder="请输入">
+            <br>
+            <br>
+            <label for="type">WiFi密码</label>
+            <input type="text" id="PWD" name="PWD" placeholder="请输入">
+            <br>
+            <br>
+            <label for="type">通信模式(0:UART,1:SPI)</label>
+            <input type="text" id="protocol" name="protocol" placeholder="请输入">
+            <br>
+            <br>
+            <label for="type">UART波特率</label>
+            <input type="text" id="uartSpeed" name="uartSpeed" placeholder="请输入">
+            <br>
+            <br>
+            <label for="type">udp server ip地址</label>
+            <input type="text" id="hostIP" name="hostIP" placeholder="请输入">
+            <br>
+            <br>
+            <label for="type">udp server 端口</label>
+            <input type="text" id="port" name="port" placeholder="请输入">
+            <br>
+        </div>
+        <br>
+        <button id="get_info" type="button" onclick="get_info()">查询配置信息</button>
+        <br>
+        <br>
+        <button id="send_config" type="button" onclick="send_config()">提交并烧录进Flash</button>
+    </table>
+</body>
+<script>
+    var isGetInfo = false; //是否查询了信息
+
+    function get_info() {
+        alert("开始查询");
+        var xhttp = new XMLHttpRequest();
+        xhttp.open("GET", "/info", true);
+        xhttp.onreadystatechange = function () {
+            if (xhttp.readyState == XMLHttpRequest.DONE) {
+                if (xhttp.status == 200) {
+                    var responseText = xhttp.responseText;//返回结果
+                    if (responseText.length > 0) {
+                        alert("查询成功！");
+                        isGetInfo = true;
+                        var obj = JSON.parse(responseText);
+                        document.getElementById("SSID").value = obj["SSID"];
+                        document.getElementById("PWD").value = obj["PWD"];
+                        document.getElementById("protocol").value = obj["protocol"];
+                        document.getElementById("uartSpeed").value = obj["uartSpeed"];
+                        document.getElementById("hostIP").value = obj["hostIP"];
+                        document.getElementById("port").value = obj["port"];
+                    }
+                }
+                else if (xhttp.status == 0) {
+                    alert("Server closed the connection abruptly!");
+                    location.reload()
+                } else {
+                    alert(xhttp.status + " Error!\n" + xhttp.responseText);
+                    location.reload()
+                }
+            }
+        };
+        xhttp.send(null);
+    }
+
+    function send_config() {
+        if (isGetInfo == false) {
+            alert("请先查询配置信息！");
+            return;
+        }
+
+        var SSID = document.getElementById("SSID").value;
+        if (SSID.length == 0 || SSID.length > 32) {
+            alert("WiFi名称不为空且不应超过32位!");
+            return;
+        }
+        var PWD = document.getElementById("PWD").value;
+        if (PWD.length == 0 || PWD.length > 64) {
+            alert("WiFi密码不应为空且不应超过64位!");
+            return;
+        }
+        var protocol = parseInt(document.getElementById("protocol").value);
+        if (protocol != 0 && protocol != 1) {
+            alert("通信模式应取0或1!");
+            return;
+        }
+        var uartSpeed = parseInt(document.getElementById("uartSpeed").value);
+        if (uartSpeed <= 0 || uartSpeed > 5000000) {
+            alert("UART波特率应为小于等于5000000的正数!");
+            return;
+        }
+        var hostIP = document.getElementById("hostIP").value;
+        if (hostIP.length == 0 || hostIP.length > 15) {
+            alert("udp server ip地址不应为空且不应超过15位!");
+            return;
+        }
+        var port = parseInt(document.getElementById("port").value);
+        if (port <= 0 || port > 65536) {
+            alert("udp server 端口应为小于65536的正数!");
+            return;
+        }
+
+        alert("开始提交");
+        var xhttp = new XMLHttpRequest();
+        xhttp.open("POST", "/config", true);
+        xhttp.onreadystatechange = function () {
+            if (xhttp.readyState == 4) {
+                if (xhttp.status == 200) {
+                    var responseText = xhttp.responseText.toString();//返回结果
+                    if (responseText == "success") {
+                        alert("提交成功！");
+                    }
+                } else if (xhttp.status == 0) {
+                    alert("Server closed the connection abruptly!");
+                    location.reload()
+                } else {
+                    alert(xhttp.status + " Error!\n" + xhttp.responseText);
+                    location.reload()
+                }
+            }
+        };
+        var data = {
+            "SSID": SSID,
+            "PWD": PWD,
+            "protocol": protocol,
+            "uartSpeed": uartSpeed,
+            "hostIP": hostIP,
+            "port": port,
+        }
+        xhttp.send(JSON.stringify(data));
+    }
+
+</script>
