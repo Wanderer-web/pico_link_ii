@@ -1,5 +1,5 @@
 // 协议版本3.6.1
-#include "pico_GY.h"
+#include "pico_GY_spi.h"
 #include "pico_link_ii.h"
 
 //----------------------发送缓冲区------------------------------
@@ -33,10 +33,11 @@ static pico_uint8 sendBuffer[BUFFER_SIZE] = {0};
 void sendimg(pico_uint8 *image, pico_uint8 width, pico_uint8 height)
 {
     pico_uint8 dat[6] = {0x21, 0x7A, width, height, 0x21, 0x7A};
-    pico_uint16 len = (pico_uint16)(6 + width * height);
-    BaseSendBytes_Uart((pico_uint8 *)(&len), 2); // 小端模式通知发送长度
-    BaseSendBytes_Uart(dat, 6);
-    BaseSendBytes_Uart(image, width * height);
+    pico_uint8 overLength = 4 - (6 + width * height) % 4;
+    memcpy((sendBuffer + 0), dat, 6);
+    memcpy((sendBuffer + 6), image, width * height);
+    memset((sendBuffer + 6 + width * height), '\0', overLength);
+    picoSendBytes_Spi(sendBuffer, (6 + width * height + overLength));
 }
 //--------------抗干扰灰度图传-------------------//
 // 当丢失数据的情况下，该协议能重新定位行来实现一定程度抗干扰能力
@@ -50,16 +51,21 @@ void sendimg_A(pico_uint8 *image, pico_uint8 width, pico_uint8 height)
     pico_uint8 line = 0;
     pico_uint8 flag2[3] = {21, 0, 133};
 
-    pico_uint16 len = (pico_uint16)(6 + width * (3 + height));
-    BaseSendBytes_Uart((pico_uint8 *)(&len), 2); // 小端模式通知发送长度
-    BaseSendBytes_Uart(flag1, 6);
+    memcpy((sendBuffer + 0), flag1, 6);
+
+    pico_uint16 len = 0;
 
     for (line = 0; line < width; line++)
     {
         flag2[1] = line;
-        BaseSendBytes_Uart(flag2, 3);
-        BaseSendBytes_Uart(image + line * height, height);
+        memcpy((sendBuffer + 6 + len), flag2, 3);
+        len += 3;
+        memcpy((sendBuffer + 6 + len), (image + line * height), height);
+        len += height;
     }
+    pico_uint8 overLength = 4 - (6 + width * (3 + height)) % 4;
+    memset((sendBuffer + 6 + len), '\0', overLength);
+    picoSendBytes_Spi(sendBuffer, (6 + len + overLength));
 }
 //--------------压缩灰度图传-------------------//
 // 发送压缩图像 例如 120x180的图像太大 传输速度慢  则可以发送 60x90的图像来提高速度
@@ -70,19 +76,20 @@ void sendimg_zoom(pico_uint8 *image, pico_uint8 width, pico_uint8 height, pico_u
 {
     pico_uint8 dat[6] = {0x21, 0x7A, dis_width, dis_height, 0x21, 0x7A};
 
+    memcpy((sendBuffer + 0), dat, 6);
+
     pico_uint8 i, j;
     for (j = 0; j < dis_height; j++)
     {
         for (i = 0; i < dis_width; i++)
         {
-            sendBuffer[i + j * dis_width] = *(image + (j * height / dis_height) * width + i * width / dis_width); // 读取像素点
+            sendBuffer[6 + i + j * dis_width] = *(image + (j * height / dis_height) * width + i * width / dis_width); // 读取像素点
         }
     }
 
-    pico_uint16 len = (pico_uint16)(6 + dis_width * dis_height);
-    BaseSendBytes_Uart((pico_uint8 *)(&len), 2); // 小端模式通知发送长度
-    BaseSendBytes_Uart(dat, 6);
-    BaseSendBytes_Uart(sendBuffer, dis_width * dis_height);
+    pico_uint8 overLength = 4 - (6 + dis_width * dis_height) % 4;
+    memset((sendBuffer + 6 + dis_width * dis_height), '\0', overLength);
+    picoSendBytes_Spi(sendBuffer, (6 + dis_width * dis_height + overLength));
 }
 
 //--------------二值化图传-------------------//
@@ -95,6 +102,8 @@ void sendimg_binary(pico_uint8 *image, pico_uint8 width, pico_uint8 height, pico
     pico_uint8 lon = 1;
     int data = 255;
     pico_uint8 line = 0, col = 0;
+
+    memcpy((sendBuffer + 0), dat, 6);
 
     pico_uint16 len = 0;
 
@@ -112,23 +121,22 @@ void sendimg_binary(pico_uint8 *image, pico_uint8 width, pico_uint8 height, pico
             }
             else
             {
-                sendBuffer[len++] = lon;
+                sendBuffer[6 + len++] = lon;
                 lon = 1;
             }
             if (lon == 190)
             {
-                sendBuffer[len++] = lon - 1;
-                sendBuffer[len++] = 0;
+                sendBuffer[6 + len++] = lon - 1;
+                sendBuffer[6 + len++] = 0;
                 lon = 1;
             }
             databool = data;
         }
     }
 
-    len += 6;
-    BaseSendBytes_Uart((pico_uint8 *)(&len), 2); // 小端模式通知发送长度
-    BaseSendBytes_Uart(dat, 6);
-    BaseSendBytes_Uart(sendBuffer, (len - 6));
+    pico_uint8 overLength = 4 - (6 + len) % 4;
+    memset((sendBuffer + 6 + len), '\0', overLength);
+    picoSendBytes_Spi(sendBuffer, (6 + len + overLength));
 }
 // 压缩二值图传
 // uint16 dis_width, uint16 dis_height 要压缩图像大小
@@ -139,6 +147,8 @@ void sendimg_binary_zoom(pico_uint8 *image, pico_uint8 width, pico_uint8 height,
     pico_uint8 lon = 1;
     int data = 255;
     pico_uint8 i, j;
+
+    memcpy((sendBuffer + 0), dat, 6);
 
     pico_uint16 len = 0;
 
@@ -156,23 +166,22 @@ void sendimg_binary_zoom(pico_uint8 *image, pico_uint8 width, pico_uint8 height,
             }
             else
             {
-                sendBuffer[len++] = lon;
+                sendBuffer[6 + len++] = lon;
                 lon = 1;
             }
             if (lon == 190)
             {
-                sendBuffer[len++] = lon - 1;
-                sendBuffer[len++] = 0;
+                sendBuffer[6 + len++] = lon - 1;
+                sendBuffer[6 + len++] = 0;
                 lon = 1;
             }
             databool = data;
         }
     }
 
-    len += 6;
-    BaseSendBytes_Uart((pico_uint8 *)(&len), 2); // 小端模式通知发送长度
-    BaseSendBytes_Uart(dat, 6);
-    BaseSendBytes_Uart(sendBuffer, (len - 6));
+    pico_uint8 overLength = 4 - (6 + len) % 4;
+    memset((sendBuffer + 6 + len), '\0', overLength);
+    picoSendBytes_Spi(sendBuffer, (6 + len + overLength));
 }
 // 带有校验的二值图传
 // chk值越大 抗干扰越强 值0-55
@@ -189,6 +198,8 @@ void sendimg_binary_CHK(pico_uint8 *image, pico_uint8 width, pico_uint8 height, 
     int imglon = 0;
     int imgdatlo = width * height / chk;
     pico_uint8 CHK = 0;
+
+    memcpy((sendBuffer + 0), dat, 7);
 
     pico_uint16 len = 0;
 
@@ -208,33 +219,33 @@ void sendimg_binary_CHK(pico_uint8 *image, pico_uint8 width, pico_uint8 height, 
             }
             else
             {
-                sendBuffer[len++] = lon;
+                sendBuffer[7 + len++] = lon;
                 lon = 1;
             }
 
             if (imglon == imgdatlo)
             {
                 CHK++;
-                sendBuffer[len++] = lon;
+                sendBuffer[7 + len++] = lon;
                 data = 255;
                 databool = 255;
-                sendBuffer[len++] = 200 + CHK;
+                sendBuffer[7 + len++] = 200 + CHK;
                 lon = 0;
                 imglon = 0;
             }
             if (lon == 190)
             {
-                sendBuffer[len++] = lon;
-                sendBuffer[len++] = 0;
+                sendBuffer[7 + len++] = lon;
+                sendBuffer[7 + len++] = 0;
                 lon = 0;
             }
             databool = data;
         }
     }
-    len += 7;
-    BaseSendBytes_Uart((pico_uint8 *)(&len), 2); // 小端模式通知发送长度
-    BaseSendBytes_Uart(dat, 7);
-    BaseSendBytes_Uart(sendBuffer, (len - 7));
+
+    pico_uint8 overLength = 4 - (7 + len) % 4;
+    memset((sendBuffer + 7 + len), '\0', overLength);
+    picoSendBytes_Spi(sendBuffer, (7 + len + overLength));
 }
 
 // 内部调用
@@ -277,7 +288,10 @@ void put_int32(pico_uint8 name, int dat)
     pico_uint8 CRC16 = swj_CRC(crc, 0, 6);
     datc[7] = (pico_uint8)(CRC16 & 0xff);
     datc[8] = (pico_uint8)(CRC16 >> 8);
-    picoSendBytes_Uart(datc, 10);
+    memcpy((sendBuffer + 0), datc, 10);
+    pico_uint8 overLength = 4 - (10) % 4;
+    memset((sendBuffer + 10), '\0', overLength);
+    picoSendBytes_Spi(sendBuffer, (10 + overLength));
 }
 
 void put_float(pico_uint8 name, float dat)
@@ -296,7 +310,10 @@ void put_float(pico_uint8 name, float dat)
     pico_uint16 CRC16 = swj_CRC(crc, 0, 6);
     datc[7] = (pico_uint8)(CRC16 & 0xff);
     datc[8] = (pico_uint8)(CRC16 >> 8);
-    picoSendBytes_Uart(datc, 10);
+    memcpy((sendBuffer + 0), datc, 10);
+    pico_uint8 overLength = 4 - (10) % 4;
+    memset((sendBuffer + 10), '\0', overLength);
+    picoSendBytes_Spi(sendBuffer, (10 + overLength));
 }
 
 //--------------传线-------------------//
@@ -331,28 +348,33 @@ void put_float(pico_uint8 name, float dat)
 void sendline_clear(pico_uint8 color, pico_uint8 width, pico_uint8 height)
 {
     pico_uint8 dat[6] = {0x21, 0x7A, width, height, color, 0x21};
-    picoSendBytes_Uart(dat, 6);
+    memcpy((sendBuffer + 0), dat, 6);
+    pico_uint8 overLength = 4 - (6) % 4;
+    memset((sendBuffer + 6), '\0', overLength);
+    picoSendBytes_Spi(sendBuffer, (6 + overLength));
 }
 // 图传赛道边界  uint8_t *zx:左边界   uint8_t *yx:右边界, uint32_t len发送的边线长度
 // 该函数与下放函数分别发送两个边线有何不同? 该函数可对应上位机还原赛道的功能*  注意先后顺序
 void sendline_xy(pico_uint8 *line_zx, pico_uint8 *line_yx, pico_uint32 len)
 {
     pico_uint8 dat[5] = {0x21, 9, len, 255, 255};
-    pico_uint16 length = (pico_uint16)(5 + len + len);
-    BaseSendBytes_Uart((pico_uint8 *)(&length), 2); // 小端模式通知发送长度
-    BaseSendBytes_Uart(dat, 5);
-    BaseSendBytes_Uart(line_zx, len);
-    BaseSendBytes_Uart(line_yx, len);
+    memcpy((sendBuffer + 0), dat, 5);
+    memcpy((sendBuffer + 5), line_zx, len);
+    memcpy((sendBuffer + 5 + len), line_yx, len);
+    pico_uint8 overLength = 4 - (5 + len + len) % 4;
+    memset((sendBuffer + 5 + len + len), '\0', overLength);
+    picoSendBytes_Spi(sendBuffer, (5 + len + len + overLength));
 }
 /*默认每行一个点*/
 // 绘制边线   color边线颜色  uint8_t *buff 发送的边线数组地址  len发送的边线长度
 void sendline(pico_uint8 color, pico_uint8 *buff, pico_uint32 len)
 {
     pico_uint8 dat[5] = {0x21, color, len, 255, 255};
-    pico_uint16 length = (pico_uint16)(5 + len);
-    BaseSendBytes_Uart((pico_uint8 *)(&length), 2); // 小端模式通知发送长度
-    BaseSendBytes_Uart(dat, 5);
-    BaseSendBytes_Uart(buff, len);
+    memcpy((sendBuffer + 0), dat, 5);
+    memcpy((sendBuffer + 5), buff, len);
+    pico_uint8 overLength = 4 - (5 + len) % 4;
+    memset((sendBuffer + 5 + len), '\0', overLength);
+    picoSendBytes_Spi(sendBuffer, (5 + len + overLength));
 }
 /*说明:
  * 例如有三个点 a(x1,y1)b(x2,y2)c(x3,y3)
@@ -367,11 +389,12 @@ void sendline(pico_uint8 color, pico_uint8 *buff, pico_uint32 len)
 void sendline2(pico_uint8 color, pico_uint8 *linex, pico_uint8 *liney, pico_uint32 len)
 {
     pico_uint8 dat[5] = {0x21, color, len, 254, 255};
-    pico_uint16 length = (pico_uint16)(5 + len + len);
-    BaseSendBytes_Uart((pico_uint8 *)(&length), 2); // 小端模式通知发送长度
-    BaseSendBytes_Uart(dat, 5);
-    BaseSendBytes_Uart(linex, len);
-    BaseSendBytes_Uart(liney, len);
+    memcpy((sendBuffer + 0), dat, 5);
+    memcpy((sendBuffer + 5), linex, len);
+    memcpy((sendBuffer + 5 + len), liney, len);
+    pico_uint8 overLength = 4 - (5 + len + len) % 4;
+    memset((sendBuffer + 5 + len + len), '\0', overLength);
+    picoSendBytes_Spi(sendBuffer, (5 + len + len + overLength));
 }
 
 #define swj_point_type1 1 // 小十字 3x3
@@ -388,7 +411,10 @@ void sendline2(pico_uint8 color, pico_uint8 *linex, pico_uint8 *liney, pico_uint
 void sendpoint(pico_uint8 color, pico_uint8 x, pico_uint8 y, pico_uint8 type)
 {
     pico_uint8 dat[7] = {0x22, color, type, 254, x, y, 255};
-    picoSendBytes_Uart(dat, 7);
+    memcpy((sendBuffer + 0), dat, 7);
+    pico_uint8 overLength = 4 - (7) % 4;
+    memset((sendBuffer + 7), '\0', overLength);
+    picoSendBytes_Spi(sendBuffer, (7 + overLength));
 }
 
 //--------------------------------------------------无线模块-----------------------------------------------//

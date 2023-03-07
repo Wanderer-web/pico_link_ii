@@ -47,7 +47,7 @@ void sendimg_A(pico_uint8 *image, pico_uint8 width, pico_uint8 height)
 {
     pico_uint8 flag1[6] = {0x21, 0x7A, width, height, (width + height) / 2, 0x7A};
 
-    pico_uint8 line = 0, col = 0;
+    pico_uint8 line = 0;
     pico_uint8 flag2[3] = {21, 0, 133};
 
     pico_uint16 len = (pico_uint16)(6 + width * (3 + height));
@@ -58,7 +58,7 @@ void sendimg_A(pico_uint8 *image, pico_uint8 width, pico_uint8 height)
     {
         flag2[1] = line;
         BaseSendBytes_Uart(flag2, 3);
-        BaseSendBytes_Uart(image + line * height + col, height);
+        BaseSendBytes_Uart(image + line * height, height);
     }
 }
 //--------------压缩灰度图传-------------------//

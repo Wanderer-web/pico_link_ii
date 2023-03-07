@@ -1,6 +1,8 @@
 #ifndef _PICO_LINK_II_H__
 #define _PICO_LINK_II_H__
 
+#include "string.h"
+
 // 数据类型声明
 typedef unsigned char pico_uint8;
 typedef unsigned short int pico_uint16;

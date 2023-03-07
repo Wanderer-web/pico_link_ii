@@ -1,6 +1,8 @@
 pico_link_ii.c 和 pico_link_ii.h 是 pico link II 模块驱动文件，包含致用上位机图像发送函数，使用需要替换宏定义，如何替换请参考例程中 pico_link_ii.c 文件写法
 
-pico_GY.c 和 pico_GY.h 是 pico link II 模块 GY 上位机驱动文件，使用需要把 pico_link_ii.c 和 pico_link_ii.h 包含在工程中
+pico_GY.c 和 pico_GY.h 是 pico link II 模块 GY 上位机UART驱动文件，使用前需要把 pico_link_ii.c 和 pico_link_ii.h 包含在工程中
+
+pico_GY_spi.c 和 pico_GY_spi.h 是 pico link II 模块 GY 上位机SPI驱动文件，使用前需要把 pico_link_ii.c 和 pico_link_ii.h 包含在工程中
 
 example 文件夹为各芯片例程，注意使用的库的版本，IPC 后缀为致用上位机，GY 后缀为 GY 上位机
 
