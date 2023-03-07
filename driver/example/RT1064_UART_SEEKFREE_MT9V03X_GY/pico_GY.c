@@ -237,6 +237,27 @@ void sendimg_binary_CHK(pico_uint8 *image, pico_uint8 width, pico_uint8 height, 
     BaseSendBytes_Uart(sendBuffer, (len - 7));
 }
 
+// 内部调用
+static inline pico_uint16 swj_CRC(pico_uint8 *Buf, pico_uint8 CRC_sta, pico_uint8 CRC_CNT)
+{
+    pico_uint16 CRC_Temp;
+    pico_uint8 i, j;
+    CRC_Temp = 0xffff;
+
+    for (i = CRC_sta; i < CRC_CNT; i++)
+    {
+        CRC_Temp ^= Buf[i];
+        for (j = 0; j < 8; j++)
+        {
+            if (CRC_Temp & 0x01)
+                CRC_Temp = (CRC_Temp >> 1) ^ 0xa001;
+            else
+                CRC_Temp = CRC_Temp >> 1;
+        }
+    }
+    return (CRC_Temp);
+}
+
 //--------------数据标签（数据示波，数据颜色标定，数据监视，仪表盘）-------------------//
 // 一个数据占一个地址,会直接出现在图传页面的右栏 点一下可以示波，右键可以设置颜色标定 设定好
 // 阈值会颜色标定数据 快速监视条件有没有触发，也可以绑定表盘，速度更直观。录制时会同步录制
@@ -314,7 +335,7 @@ void sendline_clear(pico_uint8 color, pico_uint8 width, pico_uint8 height)
 }
 // 图传赛道边界  uint8_t *zx:左边界   uint8_t *yx:右边界, uint32_t len发送的边线长度
 // 该函数与下放函数分别发送两个边线有何不同? 该函数可对应上位机还原赛道的功能*  注意先后顺序
-void sendline_xy(pico_uint8 *line_zx, pico_uint8 *line_yx, pico_uint8 len)
+void sendline_xy(pico_uint8 *line_zx, pico_uint8 *line_yx, pico_uint32 len)
 {
     pico_uint8 dat[5] = {0x21, 9, len, 255, 255};
     pico_uint16 length = (pico_uint16)(5 + len + len);
@@ -325,7 +346,7 @@ void sendline_xy(pico_uint8 *line_zx, pico_uint8 *line_yx, pico_uint8 len)
 }
 /*默认每行一个点*/
 // 绘制边线   color边线颜色  uint8_t *buff 发送的边线数组地址  len发送的边线长度
-void sendline(pico_uint8 color, pico_uint8 *buff, pico_uint8 len)
+void sendline(pico_uint8 color, pico_uint8 *buff, pico_uint32 len)
 {
     pico_uint8 dat[5] = {0x21, color, len, 255, 255};
     pico_uint16 length = (pico_uint16)(5 + len);
@@ -343,7 +364,7 @@ void sendline(pico_uint8 color, pico_uint8 *buff, pico_uint8 len)
  *
  * */
 // 无序绘制边线  color边线颜色 linex对应点的x坐标集合 liney对应点的y坐标集合  len发送的边线长度
-void sendline2(pico_uint8 color, pico_uint8 *linex, pico_uint8 *liney, pico_uint8 len)
+void sendline2(pico_uint8 color, pico_uint8 *linex, pico_uint8 *liney, pico_uint32 len)
 {
     pico_uint8 dat[5] = {0x21, color, len, 254, 255};
     pico_uint16 length = (pico_uint16)(5 + len + len);
@@ -368,27 +389,6 @@ void sendpoint(pico_uint8 color, pico_uint8 x, pico_uint8 y, pico_uint8 type)
 {
     pico_uint8 dat[7] = {0x22, color, type, 254, x, y, 255};
     picoSendBytes_Uart(dat, 7);
-}
-
-// 内部调用
-static inline pico_uint16 swj_CRC(pico_uint8 *Buf, pico_uint8 CRC_sta, pico_uint8 CRC_CNT)
-{
-    pico_uint16 CRC_Temp;
-    pico_uint8 i, j;
-    CRC_Temp = 0xffff;
-
-    for (i = CRC_sta; i < CRC_CNT; i++)
-    {
-        CRC_Temp ^= Buf[i];
-        for (j = 0; j < 8; j++)
-        {
-            if (CRC_Temp & 0x01)
-                CRC_Temp = (CRC_Temp >> 1) ^ 0xa001;
-            else
-                CRC_Temp = CRC_Temp >> 1;
-        }
-    }
-    return (CRC_Temp);
 }
 
 //--------------------------------------------------无线模块-----------------------------------------------//
