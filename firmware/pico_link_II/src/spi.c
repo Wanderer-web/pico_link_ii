@@ -57,8 +57,6 @@ void spiInit(void)
     assert(ret == ESP_OK);
 
     memset(&t, 0, sizeof(t));
-    t.length = SPI_RX_BUF_SIZE * 8;
-    t.tx_buffer = NULL;
 
     ESP_LOGI(TAG, "spi init done");
 }
@@ -71,6 +69,8 @@ void spiInit(void)
  */
 void spiPollRecv(char *spiRecvDataPtr, int *spiRecvDataLengthPtr)
 {
+    t.length = SPI_RX_BUF_SIZE * 8;
+    t.tx_buffer = NULL;
     t.rx_buffer = spiRecvDataPtr;
     ESP_ERROR_CHECK(spi_slave_transmit(RCV_HOST, &t, portMAX_DELAY));
     // spi_slave_transmit does not return until the master has done a transmission, so by here we have sent our data and
