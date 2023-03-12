@@ -175,9 +175,9 @@ UART 模式以 TC264 为例（参考逐飞无线串口接口原理图，可直�
 
 ![image-20220419130240555](image/image-20220419130240555.png)
 
-**如何烧录固件？**
+**如何通过 IDE 烧录固件？**
 
-电脑使用 USB 转 TTL 串口助手连接模块 `TXD` 脚和 `RXD` 脚 ，按住模块 `FLASH` 键不放再按一下 `RESET` 键，然后点击 `PlatformIO IDE` 底部的如红框所示按键一键编译下载，下载完毕后按 `RESET` 键复位
+电脑使用 USB 转 TTL 串口助手连接模块，5V 供电，`RXD` 接模块 `TXD`，`TXD` 接模块 `RXD` ，按住模块 `FLASH` 键不放再按一下 `RESET` 键，然后松开 `FLASH` 键。点击 `PlatformIO IDE` 底部的如红框所示按键一键编译下载，下载完毕后按 `RESET` 键复位
 
 ![download](image/download.png)
 

@@ -2,7 +2,7 @@
  * @Author: Wanderer
  * @Date: 2022-04-24 20:05:36
  * @LastEditors: Wanderer
- * @LastEditTime: 2023-02-15 19:15:02
+ * @LastEditTime: 2023-03-12 21:43:31
  * @FilePath: \pico_link_II\src\main.c
  * @Description:
  */
@@ -31,9 +31,9 @@ void app_main(void)
     if (picoConfig.protocol == PROTOCOL_UART)
     {
         uartRecvInit();
-        char *uartRecvDataPtr = NULL;
         int uartRecvDataLength = 0;
-        uartRecvDataPtr = (char *)malloc(UART_RX_BUF_SIZE); // 创建串口接收缓冲区
+        char *uartRecvDataPtr = (char *)malloc(UART_RX_BUF_SIZE); // 创建串口接收缓冲区
+        assert(uartRecvDataPtr != NULL);
         while (1)
         {
             uartPollRecv(uartRecvDataPtr, &uartRecvDataLength);
@@ -48,9 +48,9 @@ void app_main(void)
     else if (picoConfig.protocol == PROTOCOL_SPI)
     {
         spiInit();
-        WORD_ALIGNED_ATTR char *spiRecvDataPtr = NULL; // 四字节对齐
         int spiRecvDataLength = 0;
-        spiRecvDataPtr = (char *)malloc(SPI_RX_BUF_SIZE);
+        WORD_ALIGNED_ATTR char *spiRecvDataPtr = (WORD_ALIGNED_ATTR char *)malloc(SPI_RX_BUF_SIZE); // 四字节对齐
+        assert(spiRecvDataPtr != NULL);
         while (1)
         {
             spiPollRecv(spiRecvDataPtr, &spiRecvDataLength);

@@ -2,7 +2,7 @@
  * @Author: Wanderer
  * @Date: 2022-04-24 20:05:36
  * @LastEditors: Wanderer
- * @LastEditTime: 2023-03-05 15:47:12
+ * @LastEditTime: 2023-03-12 21:51:37
  * @FilePath: \pico_link_II\src\udp.c
  * @Description:
  */
@@ -40,14 +40,15 @@ void udpInit(void)
 }
 
 /**
- * @description:  udp client任务
- * @param {void} *pvParameters
+ * @description: udp client 发送数据
+ * @param {char} *udpSendDataPtr 数据指针
+ * @param {int} udpSendDataLength 数据长度
  * @return {*}
  */
 void udpClientSend(char *udpSendDataPtr, int udpSendDataLength)
 {
     int err = sendto(sock, udpSendDataPtr, udpSendDataLength, 0, (struct sockaddr *)&dest_addr, sizeof(dest_addr));
-    if (err < 0)
+    if (err < 0 && errno != ENOMEM) // WiFi缓存不够就把这帧丢掉，不重启udp了
     {
         ESP_LOGE(TAG, "Error occurred during sending: errno %d", errno);
         if (sock != -1)
