@@ -98,8 +98,8 @@ int core0_main(void)
     debug_init(); // 初始化默认调试串口
 
     // 此处编写用户代码 例如外设初始化代码等
-    mt9v03x_init();                                                                                                      // 初始化摄像头
-    spi_init(SPI_0, SPI_MODE3, 10000000, SPI0_SCLK_P20_11, SPI0_MOSI_P20_14, SPI0_MISO_P20_12, (spi_cs_pin_enum)P20_13); // 初始化SPI，波特率10000000，模式3
+    mt9v03x_init();                                                                                              // 初始化摄像头
+    spi_init(SPI_0, SPI_MODE3, 10000000, SPI0_SCLK_P20_11, SPI0_MOSI_P20_14, SPI0_MISO_P20_12, SPI0_CS2_P20_13); // 初始化SPI，波特率10000000，模式3
 
     // 此处编写用户代码 例如外设初始化代码等
     cpu_wait_event_ready(); // 等待所有核心初始化完毕
