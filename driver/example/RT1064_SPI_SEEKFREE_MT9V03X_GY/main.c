@@ -88,8 +88,8 @@ int main(void)
   debug_init();                  // 调试端口初始化
 
   // 此处编写用户代码 例如外设初始化代码等
-  mt9v03x_init();                                                                                         // 初始化摄像头
-  spi_init(SPI_4, SPI_MODE3, 10000000, SPI4_SCK_C23, SPI4_MOSI_C22, SPI4_MISO_C21, (spi_cs_pin_enum)C20); // 初始化SPI，波特率10000000，模式3
+  mt9v03x_init();                                                                                 // 初始化摄像头
+  spi_init(SPI_4, SPI_MODE3, 10000000, SPI4_SCK_C23, SPI4_MOSI_C22, SPI4_MISO_C21, SPI4_CS0_C20); // 初始化SPI，波特率10000000，模式3
   // 此处编写用户代码 例如外设初始化代码等
   while (1)
   {
