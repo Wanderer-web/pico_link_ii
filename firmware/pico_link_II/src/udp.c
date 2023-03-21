@@ -11,8 +11,8 @@
 
 static const char *TAG = "udp client";
 
-int sock;
-struct sockaddr_in dest_addr;
+static int sock;
+static struct sockaddr_in dest_addr;
 
 /**
  * @description: udp client初始化

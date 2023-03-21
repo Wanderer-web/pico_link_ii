@@ -2,7 +2,7 @@
  * @Author: Wanderer
  * @Date: 2022-04-24 20:05:36
  * @LastEditors: Wanderer
- * @LastEditTime: 2023-02-15 19:15:32
+ * @LastEditTime: 2023-03-21 19:53:36
  * @FilePath: \pico_link_II\src\uart.c
  * @Description:
  */
@@ -21,19 +21,19 @@ static const char *TAG = "uart_recv";
  * @param {*}
  * @return {*}
  */
-void uartRecvInit(void)
+void uartInit(void)
 {
     const uart_config_t uart_config = {
-        .baud_rate = picoConfig.uartSpeed, // 波特率
+        .baud_rate = ((picoConfig.protocol == PROTOCOL_UART) ? picoConfig.uartSpeed : 115200), // 波特率
         .data_bits = UART_DATA_8_BITS,
         .parity = UART_PARITY_DISABLE,
         .stop_bits = UART_STOP_BITS_1,
-        .flow_ctrl = UART_HW_FLOWCTRL_RTS, // 开启硬件流控
+        .flow_ctrl = ((picoConfig.protocol == PROTOCOL_UART) ? UART_HW_FLOWCTRL_RTS : UART_HW_FLOWCTRL_DISABLE), // 开启硬件流控
         .source_clk = UART_SCLK_APB,
     };
-    uart_driver_install(UART_NUM_0, UART_RX_BUF_SIZE * 2, 0, 0, NULL, 0);
+    uart_driver_install(UART_NUM_0, ((picoConfig.protocol == PROTOCOL_UART) ? (UART_RX_BUF_SIZE + 10) : 256), ((picoConfig.socket == SOCKET_TCP) ? (TCP_RX_BUF_SIZE + 128) : 0), 0, NULL, 0);
     uart_param_config(UART_NUM_0, &uart_config);
-    uart_set_pin(UART_NUM_0, TXD_PIN, RXD_PIN, RTS_PIN, UART_PIN_NO_CHANGE);
+    uart_set_pin(UART_NUM_0, TXD_PIN, RXD_PIN, ((picoConfig.protocol == PROTOCOL_UART) ? RTS_PIN : UART_PIN_NO_CHANGE), UART_PIN_NO_CHANGE);
     ESP_LOGI(TAG, "uart init done");
 }
 

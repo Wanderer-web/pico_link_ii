@@ -17,6 +17,7 @@ static const char *TAG = "config";
 
 picoConfig_t picoConfig = {
     .protocol = PROTOCOL_UART,
+    .socket = SOCKET_UDP,
     .uartSpeed = 3000000,
     .SSID = "Best Match",
     .PWD = "88888888",

@@ -38,6 +38,7 @@
 
 // 用户头文件
 #include "led.h"
+#include "tcp.h"
 #include "udp.h"
 #include "wifi_sta.h"
 #include "wifi_ap.h"

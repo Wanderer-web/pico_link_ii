@@ -14,7 +14,7 @@
 
 #define UART_RX_BUF_SIZE (25000)
 
-void uartRecvInit(void);
+void uartInit(void);
 void uartPollRecv(char *uartRecvDataPtr, int *uartRecvDataLengthPtr);
 
 #endif

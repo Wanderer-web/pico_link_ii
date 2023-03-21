@@ -15,9 +15,13 @@
 #define PROTOCOL_UART (0)
 #define PROTOCOL_SPI (1)
 
+#define SOCKET_UDP (0)
+#define SOCKET_TCP (1)
+
 typedef struct
 {
     uint8_t protocol;
+    uint8_t socket;
     uint32_t uartSpeed;
     char SSID[32]; /**< SSID of the AP. Null terminated string. */
     char PWD[64];  /**< Password of the AP. Null terminated string. */

@@ -2,7 +2,7 @@
  * @Author: Wanderer
  * @Date: 2022-04-26 21:06:51
  * @LastEditors: Wanderer
- * @LastEditTime: 2023-02-15 19:15:52
+ * @LastEditTime: 2023-03-13 20:30:23
  * @FilePath: \pico_link_II\src\upload_script.html
  * @Description: 
 -->
@@ -28,7 +28,7 @@
             <input type="text" id="PWD" name="PWD" placeholder="请输入">
             <br>
             <br>
-            <label for="type">通信模式(0:UART,1:SPI)</label>
+            <label for="type">与下位机通信模式(0:UART,1:SPI)</label>
             <input type="text" id="protocol" name="protocol" placeholder="请输入">
             <br>
             <br>
@@ -36,11 +36,15 @@
             <input type="text" id="uartSpeed" name="uartSpeed" placeholder="请输入">
             <br>
             <br>
-            <label for="type">udp server ip地址</label>
+            <label for="type">与上位机通信模式(0:UDP,1:TCP)</label>
+            <input type="text" id="socket" name="socket" placeholder="请输入">
+            <br>
+            <br>
+            <label for="type">server ip地址</label>
             <input type="text" id="hostIP" name="hostIP" placeholder="请输入">
             <br>
             <br>
-            <label for="type">udp server 端口</label>
+            <label for="type">server 端口</label>
             <input type="text" id="port" name="port" placeholder="请输入">
             <br>
         </div>
@@ -70,6 +74,7 @@
                         document.getElementById("PWD").value = obj["PWD"];
                         document.getElementById("protocol").value = obj["protocol"];
                         document.getElementById("uartSpeed").value = obj["uartSpeed"];
+                        document.getElementById("socket").value = obj["socket"];
                         document.getElementById("hostIP").value = obj["hostIP"];
                         document.getElementById("port").value = obj["port"];
                     }
@@ -104,7 +109,7 @@
         }
         var protocol = parseInt(document.getElementById("protocol").value);
         if (protocol != 0 && protocol != 1) {
-            alert("通信模式应取0或1!");
+            alert("与下位机通信模式应取0或1!");
             return;
         }
         var uartSpeed = parseInt(document.getElementById("uartSpeed").value);
@@ -112,14 +117,19 @@
             alert("UART波特率应为小于等于5000000的正数!");
             return;
         }
+        var socket = parseInt(document.getElementById("socket").value);
+        if (socket != 0 && socket != 1) {
+            alert("与上位机通信模式应取0或1!");
+            return;
+        }
         var hostIP = document.getElementById("hostIP").value;
-        if (hostIP.length == 0 || hostIP.length > 15) {
-            alert("udp server ip地址不应为空且不应超过15位!");
+        if (!validIPAddress(hostIP)) {
+            alert("server ip地址不是有效的Ipv4地址!");
             return;
         }
         var port = parseInt(document.getElementById("port").value);
-        if (port <= 0 || port > 65536) {
-            alert("udp server 端口应为小于65536的正数!");
+        if (port <= 0 || port > 65535) {
+            alert("server 端口应为小于等于65535的正数!");
             return;
         }
 
@@ -147,10 +157,52 @@
             "PWD": PWD,
             "protocol": protocol,
             "uartSpeed": uartSpeed,
+            "socket": socket,
             "hostIP": hostIP,
             "port": port,
         }
         xhttp.send(JSON.stringify(data));
     }
+
+    var validIPAddress = function (queryIP) {
+        if (queryIP.indexOf('.') >= 0) {
+            // IPv4
+            let last = -1;
+            for (let i = 0; i < 4; ++i) {
+                const cur = (i === 3 ? queryIP.length : queryIP.indexOf('.', last + 1));
+                if (cur < 0) {
+                    return false;
+                }
+                if (cur - last - 1 < 1 || cur - last - 1 > 3) {
+                    return false;
+                }
+                let addr = 0;
+                for (let j = last + 1; j < cur; ++j) {
+                    if (!isDigit(queryIP[j])) {
+                        return false;
+                    }
+                    addr = addr * 10 + (queryIP[j].charCodeAt() - '0'.charCodeAt());
+                }
+                if (addr > 255) {
+                    return false;
+                }
+                if (addr > 0 && queryIP[last + 1].charCodeAt() === '0'.charCodeAt()) {
+                    return false;
+                }
+                if (addr === 0 && cur - last - 1 > 1) {
+                    return false;
+                }
+                last = cur;
+            }
+            return true;
+        } else {
+            return false;
+        }
+    };
+
+    const isDigit = (ch) => {
+        return parseFloat(ch).toString() === "NaN" ? false : true;
+    }
+
 
 </script>

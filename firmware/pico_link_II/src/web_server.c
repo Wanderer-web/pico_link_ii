@@ -2,7 +2,7 @@
  * @Author: Wanderer
  * @Date: 2022-04-26 20:42:37
  * @LastEditors: Wanderer
- * @LastEditTime: 2023-02-15 19:16:10
+ * @LastEditTime: 2023-03-13 20:34:49
  * @FilePath: \pico_link_II\src\web_server.c
  * @Description:
  */
@@ -156,6 +156,7 @@ static esp_err_t get_info_handler(httpd_req_t *req)
     cJSON_AddStringToObject(root, "PWD", picoConfig.PWD);
     cJSON_AddNumberToObject(root, "protocol", (double)(picoConfig.protocol));
     cJSON_AddNumberToObject(root, "uartSpeed", (double)(picoConfig.uartSpeed));
+    cJSON_AddNumberToObject(root, "socket", (double)(picoConfig.socket));
     cJSON_AddStringToObject(root, "hostIP", picoConfig.hostIP);
     cJSON_AddNumberToObject(root, "port", (double)(picoConfig.port));
 
@@ -206,6 +207,7 @@ static esp_err_t send_config_handler(httpd_req_t *req)
     char *PWD = cJSON_GetObjectItem(root, "PWD")->valuestring;
     uint8_t protocol = (uint8_t)(cJSON_GetObjectItem(root, "protocol")->valueint);
     uint32_t uartSpeed = (uint32_t)(cJSON_GetObjectItem(root, "uartSpeed")->valueint);
+    uint8_t socket = (uint8_t)(cJSON_GetObjectItem(root, "socket")->valueint);
     char *hostIP = cJSON_GetObjectItem(root, "hostIP")->valuestring;
     uint16_t port = (uint16_t)(cJSON_GetObjectItem(root, "port")->valueint);
 
@@ -215,6 +217,7 @@ static esp_err_t send_config_handler(httpd_req_t *req)
     memcpy(picoConfig.PWD, PWD, 64);
     picoConfig.protocol = protocol;
     picoConfig.uartSpeed = uartSpeed;
+    picoConfig.socket = socket;
     memset(picoConfig.hostIP, 0, 16);
     memcpy(picoConfig.hostIP, hostIP, 16);
     picoConfig.port = port;

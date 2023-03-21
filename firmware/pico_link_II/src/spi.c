@@ -2,7 +2,7 @@
  * @Author: Wanderer
  * @Date: 2022-04-24 20:05:36
  * @LastEditors: Wanderer
- * @LastEditTime: 2023-03-05 15:47:59
+ * @LastEditTime: 2023-03-13 19:40:08
  * @FilePath: \pico_link_II\src\spi.c
  * @Description:
  */
@@ -43,7 +43,7 @@ void spiInit(void)
     spi_slave_interface_config_t slvcfg = {
         .mode = 3,
         .spics_io_num = GPIO_CS,
-        .queue_size = 3,
+        .queue_size = 1,
         .flags = 0,
     };
 

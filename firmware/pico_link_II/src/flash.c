@@ -2,7 +2,7 @@
  * @Author: Wanderer
  * @Date: 2022-04-24 20:05:36
  * @LastEditors: Wanderer
- * @LastEditTime: 2023-02-15 19:14:31
+ * @LastEditTime: 2023-03-13 20:42:25
  * @FilePath: \pico_link_II\src\flash.c
  * @Description:
  */
@@ -29,6 +29,7 @@ void writeFlashConfig(void)
     {
         ESP_LOGI(TAG, "open done\n");
         ESP_ERROR_CHECK(nvs_set_u8(my_handle, "protocol", picoConfig.protocol));
+        ESP_ERROR_CHECK(nvs_set_u8(my_handle, "socket", picoConfig.socket));
         ESP_ERROR_CHECK(nvs_set_u32(my_handle, "uartSpeed", picoConfig.uartSpeed));
         ESP_ERROR_CHECK(nvs_set_str(my_handle, "SSID", picoConfig.SSID));
         ESP_ERROR_CHECK(nvs_set_str(my_handle, "PWD", picoConfig.PWD));
@@ -47,7 +48,7 @@ void writeFlashConfig(void)
  */
 void readFlashConfig(void)
 {
-    ESP_LOGI(TAG, "read flash");
+    ESP_LOGI(TAG, "flash read start");
     nvs_handle_t my_handle;
     esp_err_t err = nvs_open("storage", NVS_READWRITE, &my_handle);
     if (err != ESP_OK)
@@ -57,9 +58,10 @@ void readFlashConfig(void)
     else
     {
         ESP_LOGI(TAG, "open done\n");
-        err = nvs_get_u8(my_handle, "protocol", &picoConfig.protocol);
+        err = nvs_get_u8(my_handle, "socket", &picoConfig.socket);
         if (err == ESP_OK)
         {
+            ESP_ERROR_CHECK(nvs_get_u8(my_handle, "protocol", &picoConfig.protocol));
             ESP_ERROR_CHECK(nvs_get_u32(my_handle, "uartSpeed", &picoConfig.uartSpeed));
             size_t length = 32;
             ESP_ERROR_CHECK(nvs_get_str(my_handle, "SSID", picoConfig.SSID, &length));
@@ -72,6 +74,7 @@ void readFlashConfig(void)
         else if (err == ESP_ERR_NVS_NOT_FOUND) // 值没有初始化
         {
             ESP_LOGE(TAG, "The value is not initialized yet!\n");
+            ESP_ERROR_CHECK(nvs_set_u8(my_handle, "socket", picoConfig.socket));
             ESP_ERROR_CHECK(nvs_set_u8(my_handle, "protocol", picoConfig.protocol));
             ESP_ERROR_CHECK(nvs_set_u32(my_handle, "uartSpeed", picoConfig.uartSpeed));
             ESP_ERROR_CHECK(nvs_set_str(my_handle, "SSID", picoConfig.SSID));
@@ -84,7 +87,7 @@ void readFlashConfig(void)
         {
             ESP_LOGE(TAG, "Error (%s) reading!\n", esp_err_to_name(err));
         }
-        ESP_LOGI(TAG, "read done\n");
+        ESP_LOGI(TAG, "flash read done\n");
     }
     // Close
     nvs_close(my_handle);
