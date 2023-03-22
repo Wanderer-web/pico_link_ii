@@ -12,9 +12,11 @@
 
 B 站视频：https://www.bilibili.com/video/BV1Uo4y1i7Jo
 
-该模块可搭配开源致用上位机 https://gitee.com/zhou-wenqi/ipc-for-car 使用，该仓库里有例程
+该模块可搭配开源致用上位机 https://gitee.com/zhou-wenqi/ipc-for-car 使用
 
-该模块也可搭配 GY 上位机（付费）使用，**模块成品及 GY 上位机已上架淘宝店铺——左家垅的牛**
+该模块可搭配 GY 上位机（付费）使用，**模块成品及 GY 上位机已上架淘宝店铺——左家垅的牛**
+
+已编译好的固件见 https://gitee.com/wanderingmemory/pico_link_ii/releases，内含烧录教程
 
 ## ⭐和一代比较⭐
 
@@ -52,8 +54,9 @@ B 站视频：https://www.bilibili.com/video/BV1Uo4y1i7Jo
 **状态指示灯**
 
 - 红：没连上 WiFi
-- 蓝：连上 WiFi
+- 蓝：连上 WiFi，TCP 模式下连上端口
 - 绿：配网模式
+- 紫：TCP 模式下连上 WiFi，但没有连上端口
 
 **发送指示灯**
 
@@ -76,7 +79,7 @@ TCP 可以和上位机双向通信，上位机向下位机发送的数据通过�
 驱动伪代码示例：
 
 ```c
-char str = "hello world!";
+char *str = "hello world!";
 uint16 len = (uint16)(strlen(str));
 UART_SEND_BYTES((uint8 *)(&len), 2); // 小端模式通知发送长度
 UART_SEND_BYTES((uint8 *)(str), (uint32)(len)); // 发送数据
@@ -92,7 +95,7 @@ SPI 支持最大**60Mbps**传输速率，一次最多接收**30000**字节
 
 ```c
 uint8 sendBuffer[BUFFER_SIZE] = {0}; // 发送缓冲区
-char str = "hello world!";
+char *str = "hello world!";
 uint32 len = (uint32)(strlen(str));
 uint32 overLen = 4 - len % 4; // 补齐为4字节倍数需要的字节数
 memcpy((sendBuffer + 0), str, len); // 复制到缓冲区
@@ -122,11 +125,9 @@ SPI_SEND_BYTES(sendBuffer, len + overLen); // 发送数据
 
 5. 设置为 WiFi STA 模式
 
-6. WiFI 硬件初始化成功开始扫描 WiFi，指示灯显示当前状态 -> **红**
+6. WiFI 硬件初始化成功开始扫描 WiFi，指示灯显示当前状态
 
-7. WiFi 连接成功，设置为 udp client / tcp client 模式指示灯显示当前状态 -> **蓝**
-
-   （tcp client 模式如果连接上 WiFi 但是没有连接上端口时状态灯显示 -> **紫**）
+7. WiFi 连接成功，设置为 udp client / tcp client 模式指示灯显示当前状态
 
 8. 等待下位机传输数据，下位机传输完数据后，模块开始通过 WiFi 向上位机 server 发送数据，发送指示灯亮
 
@@ -145,24 +146,29 @@ SPI_SEND_BYTES(sendBuffer, len + overLen); // 发送数据
 
 **和下位机如何连线？**
 
+- **5V 供电，地线必接**
+
 - **UART**
 
-  |      模块       |                        下位机                         |
-  | :-------------: | :---------------------------------------------------: |
-  |       RXD       |                          TXD                          |
-  |       TXD       |                          RXD                          |
-  | RTS (复用 MOSI) | CTS（没有接的话要在下位机串口传输函数里禁掉流控检测） |
+  |       模块        |                        下位机                         |
+  | :---------------: | :---------------------------------------------------: |
+  |        RXD        |                          TXD                          |
+  |        TXD        |                 RXD（TCP 双向通信用）                 |
+  | RTS（复用 MOSI ） | CTS（没有接的话要在下位机串口传输函数里禁掉流控检测） |
+  |       MISO        |                         悬空                          |
+  |        CLK        |                         悬空                          |
+  |        CS         |                         悬空                          |
 
 - **SPI**
 
-  | 模块 | 下位机 |
-  | :--: | :----: |
-  | CLK  |  CLK   |
-  | MISO |  MISO  |
-  | MOSI |  MOSI  |
-  |  CS  |   CS   |
-
-- **5V 供电，地线必接**
+  | 模块 |         下位机         |
+  | :--: | :--------------------: |
+  | RXD  |          悬空          |
+  | TXD  | RXD（ TCP 双向通信用） |
+  | MOSI |          MOSI          |
+  | MISO |          MISO          |
+  | CLK  |          CLK           |
+  |  CS  |           CS           |
 
 **如何计算传完一张图像所用的时间？**
 
