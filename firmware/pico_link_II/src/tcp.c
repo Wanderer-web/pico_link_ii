@@ -2,7 +2,7 @@
  * @Author: Wanderer
  * @Date: 2022-04-24 20:05:36
  * @LastEditors: Wanderer
- * @LastEditTime: 2023-03-21 20:03:31
+ * @LastEditTime: 2023-03-22 19:30:36
  * @FilePath: \pico_link_II\src\tcp.c
  * @Description:
  */
@@ -13,6 +13,7 @@ static const char *TAG = "tcp client";
 
 static int sock;
 static struct sockaddr_in dest_addr;
+static TaskHandle_t xHandle = NULL;
 
 void tcpClientRecvTask(void *arg)
 {
@@ -21,7 +22,7 @@ void tcpClientRecvTask(void *arg)
     while (1)
     {
         vTaskDelay(300 / portTICK_PERIOD_MS);
-        len = recv(sock, rx_buffer, sizeof(rx_buffer) - 1, 0);
+        len = recv(sock, rx_buffer, TCP_RX_BUF_SIZE, 0);
         if (len > 0)
         {
             uart_write_bytes(UART_NUM_0, rx_buffer, len);
@@ -32,13 +33,16 @@ void tcpClientRecvTask(void *arg)
             ESP_LOGE(TAG, "recv failed: errno %d", errno);
             if (sock != -1)
             {
+                ESP_LOGE(TAG, "Shutting down socket and restarting...");
                 setRgbLevel(0, 1, 1);
                 shutdown(sock, 0);
                 close(sock);
                 tcpInit(); // 重启
+                break;
             }
         }
     }
+    vTaskDelete(NULL);
 }
 
 /**
@@ -74,7 +78,7 @@ void tcpInit(void)
     ESP_LOGI(TAG, "Successfully connected");
     setRgbLevel(1, 1, 0);
 
-    BaseType_t xReturned = xTaskCreate(tcpClientRecvTask, "tcpClientRecvTask", 3000, NULL, tskIDLE_PRIORITY, NULL);
+    BaseType_t xReturned = xTaskCreate(tcpClientRecvTask, "tcpClientRecvTask", 3000, NULL, tskIDLE_PRIORITY, &xHandle);
     assert(xReturned == pdPASS);
     ESP_LOGI(TAG, "tcpClientRecvTask create successed!");
 }
@@ -94,6 +98,10 @@ void tcpClientSend(char *tcpSendDataPtr, int tcpSendDataLength)
         {
             ESP_LOGE(TAG, "Shutting down socket and restarting...");
             setRgbLevel(0, 1, 1);
+            if (xHandle != NULL)
+            {
+                vTaskDelete(xHandle);
+            }
             shutdown(sock, 0);
             close(sock);
             tcpInit(); // 重启
