@@ -16,7 +16,7 @@ B 站视频：https://www.bilibili.com/video/BV1Uo4y1i7Jo
 
 该模块可搭配 GY 上位机（付费）使用，**模块成品及 GY 上位机已上架淘宝店铺——左家垅的牛**
 
-已编译好的固件见 https://gitee.com/wanderingmemory/pico_link_ii/releases，内含烧录教程
+已编译好的固件见 https://gitee.com/wanderingmemory/pico_link_ii/releases 内含烧录教程
 
 ## ⭐和一代比较⭐
 
